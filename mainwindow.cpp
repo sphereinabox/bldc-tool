@@ -2588,3 +2588,13 @@ void MainWindow::on_detectObserverButton_clicked()
 {
     mPacketInterface->setDetect(DISP_POS_MODE_OBSERVER);
 }
+
+void MainWindow::on_action_New_Window_triggered()
+{
+    MainWindow *mw = new MainWindow();
+    mw->show();
+}
+
+void MainWindow::on_action_Benchmark_triggered()
+{
+}

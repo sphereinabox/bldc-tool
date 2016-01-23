@@ -125,6 +125,8 @@ private slots:
     void on_detectEncoderPosErrorButton_clicked();
     void on_detectEncoderObserverErrorButton_clicked();
     void on_detectObserverButton_clicked();
+    void on_action_New_Window_triggered();
+    void on_action_Benchmark_triggered();
 
 private:
     Ui::MainWindow *ui;
