@@ -16,6 +16,7 @@
     */
 
 #include "mainwindow.h"
+#include "benchmarkwindow.h"
 #include "ui_mainwindow.h"
 #include <QDebug>
 #include <QFileDialog>
@@ -2597,4 +2598,6 @@ void MainWindow::on_action_New_Window_triggered()
 
 void MainWindow::on_action_Benchmark_triggered()
 {
+    BenchmarkWindow *bw = new BenchmarkWindow();
+    bw->show();
 }
