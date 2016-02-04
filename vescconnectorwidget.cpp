@@ -275,7 +275,7 @@ void VescConnectorWidget::timerSlot()
                 mStatusLabel->setText("Connected, limited");
             } else {
                 mStatusLabel->setText("Connected");
-                mDriveModeLabel->setText("Released");
+                //mDriveModeLabel->setText("Released");
             }
         } else {
             mStatusLabel->setText("Not connected");

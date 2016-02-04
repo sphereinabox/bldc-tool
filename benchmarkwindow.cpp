@@ -1,5 +1,6 @@
 #include "benchmarkwindow.h"
 #include "ui_benchmarkwindow.h"
+#include <QFile>
 
 BenchmarkWindow::BenchmarkWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -11,10 +12,11 @@ BenchmarkWindow::BenchmarkWindow(QWidget *parent) :
     mTimeIncrementMillis = 500;
     mBenchmarkStartTime = QTime();
     mBenchmarkNextIncrementMillis = 0;
+    mBenchmarkDatapoints = new QVector<BenchmarkDatapoint>();
 
 
     mTimer = new QTimer(this);
-    mTimer->setInterval(20); // milliseconds
+    mTimer->setInterval(50); // milliseconds
     mTimer->start();
 
     // TODO: connect slots to vescthing1/2 errors
@@ -31,6 +33,10 @@ BenchmarkWindow::~BenchmarkWindow()
     delete ui;
 }
 
+/* TODO: On close:
+    ui->mVescConnector1->disconnect();
+    ui->mVescConnector2->disconnect();
+*/
 /*
  * setDutyCycle(duty cycle);
  * setRpm(erpm);
@@ -81,18 +87,18 @@ void BenchmarkWindow::timerSlot()
 true ||
                 (ui->mVescConnector1->isConnected() && ui->mVescConnector2->isConnected()))
         {
-            // init benchmark state
-            BenchmarkState = BenchmarkRunning;
-            mTimeIncrementMillis = 2000;
-            mBenchmarkStartTime.start();
-            mBenchmarkNextIncrementMillis = mTimeIncrementMillis;
+            BenchmarkState = BenchmarkMotorStartup;
 
-            // TODO: load from UI:
-            mBenchmarkDriveCurrent = 10.0;
-// TODO: "slow start" mode
-            mBenchmarkBrakeCurrent = 0.0;
-            mBenchmarkBrakeCurrentIncrement = 0.5;
-            mBenchmarkMaxBrakeCurrent = 5.0;
+            mBenchmarkDriveCurrent = 3.0; // startup current
+            mBenchmarkBrakeCurrent = 0.0; // freewheel
+            mBenchmarkStartTime.start();
+
+            if (mBenchmarkDatapoints != NULL)
+            {
+                delete mBenchmarkDatapoints;
+            }
+            mBenchmarkDatapoints = new QVector<BenchmarkDatapoint>();
+
             ui->mTextLog->clear();
             ui->mTextLog->append(
                         QString("%1: %2 %3 - %4")
@@ -109,6 +115,46 @@ true ||
         {
             ui->mTextLog->append("Both VESC must be connected to start benchmark.");
             BenchmarkState = BenchmarkDone;
+        }
+        break;
+    case BenchmarkMotorStartup:
+        {
+            if (mBenchmarkStartTime.elapsed() < 2000)
+            {
+                ui->mVescConnector1->setCurrent(mBenchmarkDriveCurrent);
+                ui->mVescConnector2->setCurrentBrake(mBenchmarkBrakeCurrent);
+            }
+            else
+            {
+// TODO: Abort if motor didn't spin up.
+                // init benchmark state
+                BenchmarkState = BenchmarkRunning;
+                mTimeIncrementMillis = 2000;
+                mBenchmarkStartTime.start();
+                mBenchmarkNextIncrementMillis = mTimeIncrementMillis;
+
+                // TODO: load from UI:
+                mBenchmarkDriveCurrent = 80.0; // full benchmark current
+                mBenchmarkBrakeCurrent = 0.0;
+                mBenchmarkBrakeCurrentIncrement = 2;
+                mBenchmarkMaxBrakeCurrent = 70.0;
+
+                // Switch to running benchmark
+                mTimeIncrementMillis = 2000;
+                mBenchmarkStartTime.start();
+                mBenchmarkNextIncrementMillis = mTimeIncrementMillis;
+
+                ui->mTextLog->append(
+                            QString("%1: %2 %3 - %4")
+                            .arg(0, 6) // millis
+                            .arg(mBenchmarkDriveCurrent, 6) // drive current (A)
+                            .arg(mBenchmarkBrakeCurrent, 6) // brake current (A)
+                            // message
+                            .arg("Start Benchmark")
+                            );
+                ui->mVescConnector1->setCurrent(mBenchmarkDriveCurrent);
+                ui->mVescConnector2->setCurrentBrake(mBenchmarkBrakeCurrent);
+            }
         }
         break;
     case BenchmarkRunning:
@@ -179,14 +225,100 @@ true ||
 
 void BenchmarkWindow::mcValuesReceived1(MC_VALUES values)
 {
+    int elapsed = mBenchmarkStartTime.elapsed();
+    BenchmarkDatapoint bdp = {
+        elapsed,
+        // isDriveMotor
+        1,
+        values
+    };
+    mBenchmarkDatapoints->append(bdp);
+    // TODO: update chart?
+    // TODO: abort benchmark if ERPM below some threshold
+    // TODO: abort benchmark if motors show different ERPM
+
+    ui->mRpmLabel->setText(QString().sprintf("%.3f", values.rpm));
+}
+
+void BenchmarkWindow::mcValuesReceived2(MC_VALUES values)
+{
+    int elapsed = mBenchmarkStartTime.elapsed();
+    BenchmarkDatapoint bdp = {
+        elapsed,
+        // isDriveMotor
+        0,
+        values
+    };
+    mBenchmarkDatapoints->append(bdp);
     // TODO: update chart?
     // TODO: abort benchmark if ERPM below some threshold
     // TODO: abort benchmark if motors show different ERPM
 }
 
-void BenchmarkWindow::mcValuesReceived2(MC_VALUES values)
+void BenchmarkWindow::on_saveResultsPushButton_clicked()
 {
-    // TODO: update chart?
-    // TODO: abort benchmark if ERPM below some threshold
-    // TODO: abort benchmark if motors show different ERPM
+    QString path = QString("/Users/nick/Desktop/log.csv");
+    QFile file(path);
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qDebug() << "Could not open" << path;
+        return;
+    }
+
+    QTextStream out(&file);
+
+    QString header;
+    header.append("elapsedMilliseconds,");
+    header.append("isDriveMotor,");
+    header.append("v_in,");
+    header.append("temp_mos1,");
+    header.append("temp_mos2,");
+    header.append("temp_mos3,");
+    header.append("temp_mos4,");
+    header.append("temp_mos5,");
+    header.append("temp_mos6,");
+    header.append("temp_pcb,");
+    header.append("current_motor,");
+    header.append("current_in,");
+    header.append("rpm,");
+    header.append("duty_now,");
+    header.append("amp_hours,");
+    header.append("amp_hours_charged,");
+    header.append("watt_hours,");
+    header.append("watt_hours_charged,");
+    header.append("tachometer,");
+    header.append("tachometer_abs\n");
+    out << header;
+
+    QVectorIterator<BenchmarkDatapoint> i(*mBenchmarkDatapoints);
+
+    while (i.hasNext()) {
+        const BenchmarkDatapoint &element = i.next();
+        QString row;
+
+        row.append(QString().sprintf("%d,", element.elapsedMilliseconds));
+        row.append(QString().sprintf("%d,", element.isDriveMotor));
+        row.append(QString().sprintf("%.3f,", element.values.v_in));
+        row.append(QString().sprintf("%.3f,", element.values.temp_mos1));
+        row.append(QString().sprintf("%.3f,", element.values.temp_mos2));
+        row.append(QString().sprintf("%.3f,", element.values.temp_mos3));
+        row.append(QString().sprintf("%.3f,", element.values.temp_mos4));
+        row.append(QString().sprintf("%.3f,", element.values.temp_mos5));
+        row.append(QString().sprintf("%.3f,", element.values.temp_mos6));
+        row.append(QString().sprintf("%.3f,", element.values.temp_pcb));
+        row.append(QString().sprintf("%.3f,", element.values.current_motor));
+        row.append(QString().sprintf("%.3f,", element.values.current_in));
+        row.append(QString().sprintf("%.3f,", element.values.rpm));
+        row.append(QString().sprintf("%.3f,", element.values.duty_now));
+        row.append(QString().sprintf("%.3f,", element.values.amp_hours));
+        row.append(QString().sprintf("%.3f,", element.values.amp_hours_charged));
+        row.append(QString().sprintf("%.3f,", element.values.watt_hours));
+        row.append(QString().sprintf("%.3f,", element.values.watt_hours_charged));
+        row.append(QString().sprintf("%d,", element.values.tachometer));
+        row.append(QString().sprintf("%d", element.values.tachometer_abs));
+
+        out << row << "\n";
+    }
+
+    file.close();
 }

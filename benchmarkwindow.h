@@ -7,6 +7,12 @@
 
 #include "packetinterface.h"
 
+struct BenchmarkDatapoint {
+    int elapsedMilliseconds;
+    int isDriveMotor;
+    MC_VALUES values;
+};
+
 namespace Ui {
 class BenchmarkWindow;
 }
@@ -27,13 +33,18 @@ private slots:
     void on_startBenchmarkPushButton_clicked();
     void on_abortPushButton_clicked();
 
+    void on_saveResultsPushButton_clicked();
+
 private:
     Ui::BenchmarkWindow *ui;
 
     QTimer *mTimer;
 
+    QVector<BenchmarkDatapoint> *mBenchmarkDatapoints;
+
     enum BenchmarkState { BenchmarkNotStarted = 0,
                           BenchmarkReadyToBegin,
+                          BenchmarkMotorStartup,
                           BenchmarkRunning,
                           BenchmarkDone } BenchmarkState;
     // 500 or 1000 likely
