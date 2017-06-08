@@ -16,6 +16,7 @@
     */
 
 #include "digitalfiltering.h"
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <QDebug>
 
@@ -227,8 +228,8 @@ QVector<double> DigitalFiltering::filterSignal(const QVector<double> &signal, co
 QVector<double> DigitalFiltering::generateFirFilter(double f_break, int bits, bool useHamming)
 {
     int taps = 1 << bits;
-    double imag[taps];
-    double filter_vector[taps];
+    double *imag = new double[taps];
+    double *filter_vector = new double[taps];
 
     for(int i = 0;i < taps;i++) {
         if (i < (int)((double)taps * f_break)) {
@@ -254,6 +255,9 @@ QVector<double> DigitalFiltering::generateFirFilter(double f_break, int bits, bo
     for(int i = 0;i < taps;i++) {
         result.append(filter_vector[i]);
     }
+
+    delete[] imag;
+    delete[] filter_vector;
 
     return result;
 }
