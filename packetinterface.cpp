@@ -287,6 +287,14 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
 
     QByteArray sendData = QByteArray::fromRawData((char*)buffer, ind);
 
+    // TODO: use QStringBuilder or some other way to reduce # allocations
+    QString data_hex = QString("");
+    data_hex += QString("Outgoing len: %1, hex: ").arg(ind);
+    for (int q=0; q<ind;q++) {
+        data_hex += QString("%1 ").arg(buffer[q],2,16,QLatin1Char('0'));
+    }
+    qDebug(qUtf8Printable(data_hex));
+
     emit dataToSend(sendData);
 
     return true;
@@ -318,6 +326,14 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     double dec_adc_voltage2;
     int fw_major;
     int fw_minor;
+
+    // TODO: use QStringBuilder or some other way to reduce # allocations
+    QString data_hex = QString("");
+    data_hex += QString("Incoming len: %1, hex: ").arg(len);
+    for (int q=0; q<len;q++) {
+        data_hex += QString("%1 ").arg(data[q],2,16,QLatin1Char('0'));
+    }
+    qDebug(qUtf8Printable(data_hex));
 
     unsigned char id = data[0];
     data++;
