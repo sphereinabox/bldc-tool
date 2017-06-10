@@ -24,7 +24,8 @@ SOURCES += main.cpp\
     serialization.cpp \
     mrichtextedit.cpp \
     mtextedit.cpp \
-    rtdatawidget.cpp
+    rtdatawidget.cpp \
+    bldcmonitorapplication.cpp
 
 HEADERS  += mainwindow.h \
     qcustomplot.h \
@@ -35,7 +36,8 @@ HEADERS  += mainwindow.h \
     mrichtextedit.h \
     mtextedit.h \
     rtdatawidget.h \
-    datatypes.h
+    datatypes.h \
+    bldcmonitorapplication.h
 
 FORMS    += mainwindow.ui \
     mrichtextedit.ui

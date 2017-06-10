@@ -15,6 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
 
+#if false
 #include <QApplication>
 #include "mainwindow.h"
 
@@ -23,6 +24,21 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
+
+    return a.exec();
+}
+
+
+#else
+
+// BLDC-monitor tool
+#include "bldcmonitorapplication.h"
+
+int main(int argc, char *argv[])
+{
+    BldcMonitorApplication a(argc, argv);
     
     return a.exec();
 }
+
+#endif
