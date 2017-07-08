@@ -293,10 +293,10 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
     if (PACKETINTERFACE_DEBUG) {
         QString data_hex = QString("");
         data_hex += QString("Outgoing len: %1, hex: ").arg(ind);
-        for (int q=0; q<ind;q++) {
+        for (unsigned int q=0; q<ind;q++) {
             data_hex += QString("%1 ").arg(buffer[q],2,16,QLatin1Char('0'));
         }
-        qDebug(qUtf8Printable(data_hex));
+        qDebug(qPrintable(data_hex));
     }
 
     emit dataToSend(sendData);
@@ -338,7 +338,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         for (int q=0; q<len;q++) {
             data_hex += QString("%1 ").arg(data[q],2,16,QLatin1Char('0'));
         }
-        qDebug(qUtf8Printable(data_hex));
+        qDebug(qPrintable(data_hex));
     }
 
     unsigned char id = data[0];

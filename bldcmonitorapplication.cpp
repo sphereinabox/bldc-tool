@@ -46,9 +46,9 @@ BldcMonitorApplication::~BldcMonitorApplication()
 void BldcMonitorApplication::showStatusInfo(QString info, bool isGood)
 {
     if (isGood) {
-        qDebug(qUtf8Printable(info));
+        qDebug(qPrintable(info));
     } else {
-        qWarning(qUtf8Printable(info));
+        qWarning(qPrintable(info));
     }
 }
 
@@ -262,7 +262,7 @@ void BldcMonitorApplication::mcValuesReceived(MC_VALUES values)
                 values.tachometer,
                 values.tachometer_abs,
                 values.fault_code,
-                qUtf8Printable(values.fault_str));
+                qPrintable(values.fault_str));
     showStatusInfo(valuesLineCsv, true);
     // TODO: Log values
     // TODO: broadcast values to PD over UDP
