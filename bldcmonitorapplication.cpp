@@ -52,9 +52,9 @@ BldcMonitorApplication::~BldcMonitorApplication()
 void BldcMonitorApplication::showStatusInfo(QString info, bool isGood)
 {
     if (isGood) {
-        qDebug(qPrintable(info));
+        qDebug("%s", qPrintable(info));
     } else {
-        qWarning(qPrintable(info));
+        qWarning("%s", qPrintable(info));
     }
 }
 
