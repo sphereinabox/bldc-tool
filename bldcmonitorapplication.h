@@ -3,6 +3,7 @@
 
 #include <QCoreApplication>
 #include <QSerialPort>
+#include <QUdpSocket>
 #include <QTimer>
 #include "packetinterface.h"
 #include "datatypes.h"
@@ -35,6 +36,8 @@ private:
     bool mFwVersionReceived;
     int mFwRetries;
     QList<QPair<int, int> > mCompatibleFws;
+
+    QUdpSocket *mUdpSocket;
 
     PacketInterface *mPacketInterface;
 

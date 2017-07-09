@@ -1,7 +1,10 @@
 #include "bldcmonitorapplication.h"
 #include <QThread>
 
-#define SERIAL_PORT "COM4"
+#define SERIAL_PORT "/dev/tty.usbmodem301"
+#define PD_ADDRESS QHostAddress::LocalHost
+#define PD_PORT 3000
+
 
 BldcMonitorApplication::BldcMonitorApplication(int &argc, char **argv)
     : QCoreApplication(argc, argv)
@@ -13,6 +16,9 @@ BldcMonitorApplication::BldcMonitorApplication(int &argc, char **argv)
     mCompatibleFws.append(qMakePair(2, 18));
 
     mSerialPort = new QSerialPort(this);
+
+    mUdpSocket = new QUdpSocket(this);
+    //mUdpSocket->bind(QHostAddress(PD_ADDRESS), PD_PORT);
 
     mTimer = new QTimer(this);
     mTimer->setInterval(20);
@@ -265,7 +271,39 @@ void BldcMonitorApplication::mcValuesReceived(MC_VALUES values)
                 qPrintable(values.fault_str));
     showStatusInfo(valuesLineCsv, true);
     // TODO: Log values
-    // TODO: broadcast values to PD over UDP
+    // TODO: timestamp?
+    
+    // broadcast values to PD over UDP
+    QString valuesLinePd;
+    valuesLinePd.sprintf(
+        "vesc %4.2f %4.1f %4.1f %4.1f %4.1f %4.1f %4.1f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f %d %d %d %s;\n",
+                values.v_in,
+                values.temp_mos1,
+                values.temp_mos2,
+                values.temp_mos3,
+                values.temp_mos4,
+                values.temp_mos5,
+                values.temp_mos6,
+                values.temp_pcb,
+                values.current_motor,
+                values.current_in,
+                values.rpm,
+                values.duty_now,
+                values.amp_hours,
+                values.amp_hours_charged,
+                values.watt_hours,
+                values.watt_hours_charged,
+                values.tachometer,
+                values.tachometer_abs,
+                values.fault_code,
+                qPrintable(values.fault_str));
+    if (mUdpSocket->writeDatagram(valuesLinePd.toUtf8().constData(), valuesLinePd.length(),
+				  PD_ADDRESS,
+				  PD_PORT) < 0) {
+      QString err;err.sprintf("%d", mUdpSocket->error());
+      showStatusInfo("Failed to send UDP", true);
+      showStatusInfo(err, true);
+    }
 }
 
 void BldcMonitorApplication::printReceived(QString str)
