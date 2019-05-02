@@ -43,6 +43,8 @@ BldcMonitorApplication::BldcMonitorApplication(int &argc, char **argv)
             this, SLOT(mcValuesReceived(MC_VALUES)));
     connect(mPacketInterface, SIGNAL(printReceived(QString)),
             this, SLOT(printReceived(QString)));
+    connect(mPacketInterface, SIGNAL(mcconfReceived(mc_configuration)),
+            this, SLOT(mcconfReceived(mc_configuration)));
 }
 
 BldcMonitorApplication::~BldcMonitorApplication()
@@ -229,6 +231,9 @@ void BldcMonitorApplication::fwVersionReceived(int major, int minor)
         mPacketInterface->setLimitedMode(false);
         fwStr.sprintf("VESC Firmware Version %d.%d", major, minor);
         showStatusInfo(fwStr, true);
+
+        // ask for mcconf
+        mPacketInterface->getMcconf();
     }
 
     if (major >= 0) {
@@ -248,7 +253,7 @@ void BldcMonitorApplication::mcValuesReceived(MC_VALUES values)
     QString valuesLineCsv;
     // TODO: timestamp?
     valuesLineCsv.sprintf(
-        "%4.2f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.2f,%4.2f,%4.2f,%4.2f,%4.2f,%4.2f,%4.2f,%4.2f,%4.2f,%d,%d,%d,%s",
+        "vesc,%4.2f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.2f,%4.2f,%4.2f,%4.2f,%4.2f,%4.2f,%4.2f,%4.2f,%4.2f,%d,%d,%d,%s",
                 values.v_in,
                 values.temp_mos1,
                 values.temp_mos2,
@@ -300,6 +305,94 @@ void BldcMonitorApplication::mcValuesReceived(MC_VALUES values)
     if (mUdpSocket->writeDatagram(valuesLinePd.toUtf8().constData(), valuesLinePd.length(),
 				  PD_ADDRESS,
 				  PD_PORT) < 0) {
+      QString err;err.sprintf("%d", mUdpSocket->error());
+      showStatusInfo("Failed to send UDP", true);
+      showStatusInfo(err, true);
+    }
+}
+
+void BldcMonitorApplication::mcconfReceived(mc_configuration mcconf)
+{
+//    showStatusInfo("MCCONF Received", true);
+    QString valuesLineCsv;
+    // TODO: timestamp?
+    valuesLineCsv.sprintf(
+        "mcconf"
+        ",%d,%d,%d"
+        ",%.2f,%.2f,%.2f,%.2f,%.2f,%d"
+        ",%d,%.2f,%.2f,%.2f,%.2f"
+        ",%.2f,%.2f,%.2f,%.2f"
+        ",%.2f,%.2f,%.2f,%.2f"
+        ",%.4f,%.4f"
+        ",%.2f,%.2f,%.2f,%.2f"
+        ",%d,%.2f,%.2f,%.2f"
+        ",%.3f,%.2f,%.5f"
+        ",%.4f,%.4f,%.4f,%.5f"
+        ,
+                mcconf.pwm_mode,
+                mcconf.motor_type,
+                mcconf.sensor_mode,
+
+                mcconf.l_current_max,
+                mcconf.l_current_min,
+                mcconf.l_in_current_max,
+                mcconf.l_in_current_min,
+                mcconf.l_abs_current_max,
+                mcconf.l_slow_abs_current, // bool
+
+                mcconf.l_rpm_lim_neg_torque, // bool
+                mcconf.l_min_erpm,
+                mcconf.l_max_erpm,
+                mcconf.l_max_erpm_fbrake,
+                mcconf.l_max_erpm_fbrake_cc,
+
+                mcconf.l_temp_fet_start,
+                mcconf.l_temp_fet_end,
+                mcconf.l_temp_motor_start,
+                mcconf.l_temp_motor_end,
+
+                mcconf.l_min_vin,
+                mcconf.l_max_vin,
+                mcconf.l_battery_cut_start,
+                mcconf.l_battery_cut_end,
+
+                mcconf.l_min_duty,
+                mcconf.l_max_duty,
+
+                // BLDC sensorless settings
+                mcconf.sl_min_erpm,
+                mcconf.sl_cycle_int_rpm_br,
+                mcconf.sl_phase_advance_at_br,
+                mcconf.sl_max_fullbreak_current_dir_change,
+
+                mcconf.comm_mode, // enum
+                mcconf.sl_cycle_int_limit,
+                mcconf.sl_min_erpm_cycle_int_limit,
+                mcconf.sl_bemf_coupling_k,
+
+                // skipping hall table
+                // skipping FOC settings
+                // skipping encoder buttons
+
+                // advanced tab
+                mcconf.cc_startup_boost_duty,
+                mcconf.cc_min_current,
+                mcconf.cc_gain,
+
+                mcconf.m_duty_ramp_step,
+                mcconf.cc_ramp_step_max, // nope
+                mcconf.m_current_backoff_gain,
+                mcconf.m_duty_ramp_step_rpm_lim);
+//                qPrintable(values.fault_str));
+    showStatusInfo(valuesLineCsv, true);
+    // TODO: Log values
+    // TODO: timestamp?
+
+    // broadcast values to PD over UDP
+    QString mcconfLinePd = valuesLineCsv.replace(","," ") + ";\n";
+    if (mUdpSocket->writeDatagram(mcconfLinePd.toUtf8().constData(), mcconfLinePd.length(),
+          PD_ADDRESS,
+          PD_PORT) < 0) {
       QString err;err.sprintf("%d", mUdpSocket->error());
       showStatusInfo("Failed to send UDP", true);
       showStatusInfo(err, true);

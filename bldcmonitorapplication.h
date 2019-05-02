@@ -25,6 +25,7 @@ private slots:
     void ackReceived(QString ackType);
     void mcValuesReceived(MC_VALUES values);
     void printReceived(QString str);
+    void mcconfReceived(mc_configuration mcconf);
 
     void on_serialConnectButton_clicked();
     void on_disconnectButton_clicked();
