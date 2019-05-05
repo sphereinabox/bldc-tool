@@ -15,30 +15,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
 
-#if false
 #include <QApplication>
 #include "mainwindow.h"
-
-int main(int argc, char *argv[])
-{
-    QApplication a(argc, argv);
-    MainWindow w;
-    w.show();
-
-    return a.exec();
-}
-
-
-#else
-
-// BLDC-monitor tool
 #include "bldcmonitorapplication.h"
+#include <cstring>
 
 int main(int argc, char *argv[])
 {
-    BldcMonitorApplication a(argc, argv);
-    
-    return a.exec();
-}
+    if (argc == 2 && strcmp(argv[1],"-l") == 0) 
+    {
+        BldcMonitorApplication a(argc, argv);
+        
+        return a.exec();
+    }
+    else
+    {
+        QApplication a(argc, argv);
+        MainWindow w;
+        w.show();
 
-#endif
+        return a.exec();
+    }
+}
