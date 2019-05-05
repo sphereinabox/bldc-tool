@@ -999,7 +999,8 @@ bool PacketInterface::setMcconf(const mc_configuration &mcconf)
     utility::buffer_append_double32(mSendBuffer,mcconf.cc_startup_boost_duty, 1000000, &send_index);
     utility::buffer_append_double32(mSendBuffer,mcconf.cc_min_current, 1000, &send_index);
     utility::buffer_append_double32(mSendBuffer,mcconf.cc_gain, 1000000, &send_index);
-    utility::buffer_append_double32(mSendBuffer,mcconf.cc_ramp_step_max, 1000000, &send_index);
+    // workaround firmware 2.18 bug that uses 1e5 on received values, 1e6 on saved values
+    utility::buffer_append_double32(mSendBuffer,mcconf.cc_ramp_step_max, 100000, &send_index);
 
     utility::buffer_append_int32(mSendBuffer, mcconf.m_fault_stop_time_ms, &send_index);
     utility::buffer_append_double32(mSendBuffer,mcconf.m_duty_ramp_step, 1000000, &send_index);
